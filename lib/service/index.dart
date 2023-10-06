@@ -1,0 +1,1 @@
+export 'package:blocker_translator/service/window_manager_service.dart';
