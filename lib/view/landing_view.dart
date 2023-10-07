@@ -15,16 +15,13 @@ class LandingView extends StatefulWidget {
 class _LandingViewState extends State<LandingView> with WindowListener {
   bool isPlay = false;
   GlobalKey key = GlobalKey();
-  Size? blockerSize;
+  // Size? blockerSize;
 
   LandingViewModel get viewModel =>
       Provider.of<LandingViewModel>(context, listen: false);
 
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      viewModel.setblockerSize = getRedBoxSize(key.currentContext!);
-    });
     windowManager.addListener(this);
     super.initState();
   }
@@ -48,9 +45,9 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   }
 
   @override
-  void onWindowResize() {
-    viewModel.setblockerSize = getRedBoxSize(key.currentContext!);
-    super.onWindowResize();
+  void onWindowEvent(String eventName) {
+    viewModel.calcblockerSize();
+    super.onWindowEvent(eventName);
   }
 
   @override
@@ -91,9 +88,11 @@ class _LandingViewState extends State<LandingView> with WindowListener {
       ),
       backgroundColor: Colors.transparent,
       body: Container(
-          key: key,
           child: viewModel.imageBytes != null
-              ? Center(child: Image.memory(viewModel.imageBytes!,))
+              ? Center(
+                  child: Image.memory(
+                  viewModel.imageBytes!,
+                ))
               : null),
     );
   }
