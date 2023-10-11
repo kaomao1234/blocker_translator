@@ -25,7 +25,6 @@ class LandingViewModel with ChangeNotifier {
 
   void calcRect() async {
     Rect windowBound = await windowManager.getBounds();
-    log(_blockerSize.toString());
     _rectangleModel = RectangleModel(
         height: _blockerSize!.height,
         width: _blockerSize!.width,
