@@ -49,6 +49,12 @@ class Server():
         encodedImage = cv2.imencode(".png", array_image)[1]
         yield (encodedImage.tobytes())
 
+    def image_to_text(self):
+        ocr_reader = screen_ocr.Reader.create_quality_reader()
+        img = Image.fromarray(self.store_image)
+        text = ocr_reader.read_image(image=img).as_string()
+        return text
+
     def run(self):
         @self.app.get('/text_from_image')
         async def text_from_cur_image():
