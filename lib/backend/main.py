@@ -2,10 +2,12 @@ from mss import mss
 import uvicorn
 from fastapi import FastAPI, responses
 import ctypes
-from PIL import Image
+from PIL import Image,ImageFilter
 import numpy as np
 from pydantic import BaseModel
 import cv2
+import pytesseract
+import screen_ocr
 
 
 class Rectangle(BaseModel):
@@ -28,6 +30,7 @@ class Server():
         self.app = FastAPI()
         self.count = 0
         self.store_rectangle: Rectangle = None
+        self.store_image: np.ndarray = None
         user32 = ctypes.windll.user32
         self.screensize = user32.GetSystemMetrics(
             0), user32.GetSystemMetrics(1)
@@ -49,6 +52,7 @@ class Server():
             "RGB", (screenshot.width, screenshot.height), screenshot.rgb)
         array_image = np.array(img, dtype="uint8")
         array_image = np.flip(array_image, axis=2)
+        self.store_image = array_image
         encodedImage = cv2.imencode(".png", array_image)[1]
         yield (encodedImage.tobytes())
 
