@@ -31,6 +31,9 @@ class Server():
         user32 = ctypes.windll.user32
         self.screensize = user32.GetSystemMetrics(
             0), user32.GetSystemMetrics(1)
+        
+    def rgb2gray(self,rgb):
+        return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
     def get_frame(self):
         frame = np.random.randint(
