@@ -50,6 +50,10 @@ class Server():
         yield (encodedImage.tobytes())
 
     def run(self):
+        @self.app.get('/text_from_image')
+        async def text_from_cur_image():
+            return self.image_to_text()
+
         @self.app.post("/blocker_capture")
         async def set_blocker_capture(rectangle: Rectangle):
             self.store_rectangle = rectangle
