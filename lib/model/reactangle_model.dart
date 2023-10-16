@@ -9,4 +9,8 @@ class RectangleModel {
   Map<String, double> toJson() {
     return {"left": left, "top": top, "height": height, "width": width};
   }
+
+  List<double> toList() {
+    return [left, top, height, width];
+  }
 }
