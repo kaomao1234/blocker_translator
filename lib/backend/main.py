@@ -58,6 +58,7 @@ class Server():
 
     def image_to_text(self):
         ocr_reader = screen_ocr.Reader.create_quality_reader()
+        
         img = Image.fromarray(self.store_image)
         text = ocr_reader.read_image(image=img).as_string()
         return text
