@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:blocker_translator/model/index.dart';
 import 'package:http/http.dart' as http;
 
 Future<Uint8List?> blockerCaptureFeed() async {
