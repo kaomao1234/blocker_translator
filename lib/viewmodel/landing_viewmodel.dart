@@ -17,6 +17,7 @@ class LandingViewModel with ChangeNotifier {
   int frameCounter = 0;
   int lastTime = DateTime.now().millisecondsSinceEpoch;
   int fps = 0;
+  String prevText = "";
   void calcblockerSize() async {
     titleBarHeight = await windowManager.getTitleBarHeight();
     Size size = await windowManager.getSize();
@@ -41,14 +42,17 @@ class LandingViewModel with ChangeNotifier {
       bool allowToGet, void Function(Uint8List? imageBytes) callback) async {
     prevTimer?.cancel();
     prevTimer =
-        Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+        Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       imageBytes = null;
       callback(imageBytes);
       if (allowToGet) {
         blockerCaptureRequest(_rectangleModel!);
         imageBytes = await blockerCaptureFeed();
         String? textCaptured = await textFromImage();
-        log(textCaptured.toString());
+        if (textCaptured != prevText) {
+          prevText = textCaptured ?? "";
+          log(textCaptured.toString());
+        }
       } else {
         imageBytes = null;
         timer.cancel();
