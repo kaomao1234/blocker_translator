@@ -57,10 +57,11 @@ class Server():
         yield (encodedImage.tobytes())
 
     def image_to_text(self):
-        ocr_reader = screen_ocr.Reader.create_quality_reader()
-        
         img = Image.fromarray(self.store_image)
+        img = img.filter(ImageFilter.DETAIL)
+        ocr_reader = screen_ocr.Reader.create_quality_reader()
         text = ocr_reader.read_image(image=img).as_string()
+        # text = pytesseract.pytesseract.image_to_string(img,lang='eng')
         return text
 
     def run(self):
