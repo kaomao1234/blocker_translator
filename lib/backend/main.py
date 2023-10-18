@@ -62,7 +62,7 @@ class Server():
         ocr_reader = screen_ocr.Reader.create_quality_reader()
         text = ocr_reader.read_image(image=img).as_string()
         # text = pytesseract.pytesseract.image_to_string(img,lang='eng')
-        return text
+        return text.replace("â","--")
 
     def run(self):
         @self.app.get('/text_from_image')
