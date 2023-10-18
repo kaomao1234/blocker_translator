@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:blocker_translator/model/rectangle.dart';
 import 'package:blocker_translator/viewmodel/index.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -17,10 +18,15 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   bool isPlay = false;
   GlobalKey key = GlobalKey();
   bool isSwicthMode = false;
-  final List<Rect> rectangles = [];
-  Rect? currentRect;
+  List<RectangleModel> rectangles = [];
+  RectangleModel? currentRect;
   Rect? tempRect;
   final blockerSizeNotifier = ValueNotifier<Size>(Size.zero);
+
+  double top = 100.0;
+  double left = 100.0;
+  double width = 200.0;
+  double height = 100.0;
 
   LandingViewModel get viewModel =>
       Provider.of<LandingViewModel>(context, listen: false);
@@ -55,56 +61,98 @@ class _LandingViewState extends State<LandingView> with WindowListener {
     super.onWindowEvent(eventName);
   }
 
-  void addRect(Offset start, Offset end) {
-    setState(() {
-      rectangles.add(Rect.fromPoints(start, end));
-    });
-  }
-
-  Widget drawableRectangle(Size blockerSize) {
+  Widget drawableRectangle(Size size) {
     return SizedBox(
-      width: blockerSize.width > 0 ? blockerSize.width : null,
-      height: blockerSize.height > 0 ? blockerSize.height : null,
+      width: size.width > 0 ? size.width : null,
+      height: size.height > 0 ? size.height : null,
       child: Stack(
         children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onPanStart: (details) {
-                currentRect = Rect.fromPoints(
-                    details.localPosition, details.localPosition);
-              },
-              onPanUpdate: (details) {
-                setState(() {
-                  Offset end = details.localPosition;
-                  Offset start = currentRect!.topLeft;
-                  if (start.dy < 0) {
-                    start = Offset(start.dx, 5);
-                  }
-                  if (start.dx < 0) {
-                    start = Offset(5, start.dy);
-                  }
-
-                  if (end.dx > blockerSize.width) {
-                    end = Offset(blockerSize.width, details.localPosition.dy);
-                  }
-                  if (end.dy > blockerSize.height) {
-                    end = Offset(end.dx, blockerSize.height);
-                  }
-                  currentRect = Rect.fromPoints(start, end);
-                });
-              },
-              onPanEnd: (details) {
-                addRect(currentRect!.topLeft, currentRect!.bottomRight);
-              },
-              child: CustomPaint(
-                painter: RectanglePainter(rectangles, currentRect),
-              ),
-            ),
+          RegionBox(
+            height,
+            left,
+            top,
+            width,
+            boxPostionUpdate: (details) {
+              setState(() {
+                left += details.delta.dx;
+                top += details.delta.dy;
+              });
+            },
+            boxSizeUpdate: (details) {
+              setState(() {
+                width += details.delta.dx;
+                height += details.delta.dy;
+              });
+            },
           ),
         ],
       ),
     );
   }
+
+  // Widget drawableRectangle(Size blockerSize) {
+  //   return SizedBox(
+  //     width: blockerSize.width > 0 ? blockerSize.width : null,
+  //     height: blockerSize.height > 0 ? blockerSize.height : null,
+  //     child: Stack(
+  //       children: [
+  //         Positioned.fill(
+  //           child: GestureDetector(
+  //             onPanStart: (details) {
+  //               currentRect = RectangleModel(
+  //                   Rect.fromPoints(
+  //                       details.localPosition, details.localPosition),
+  //                   "");
+  //             },
+  //             onPanUpdate: (details) {
+  //               setState(() {
+  //                 Offset end = details.localPosition;
+  //                 Offset start = currentRect!.rect.topLeft;
+  //                 if (start.dy < 0) {
+  //                   start = Offset(start.dx, 5);
+  //                 }
+  //                 if (start.dx < 0) {
+  //                   start = Offset(3, start.dy);
+  //                 }
+
+  //                 if (end.dx > blockerSize.width) {
+  //                   end = Offset(blockerSize.width, details.localPosition.dy);
+  //                 }
+  //                 if (end.dy > blockerSize.height) {
+  //                   end = Offset(end.dx, blockerSize.height);
+  //                 }
+  //                 currentRect!.rect = Rect.fromPoints(start, end);
+  //               });
+  //             },
+  //             onPanEnd: (details) {
+  //               setState(() {
+  //                 rectangles.add(currentRect!);
+  //               });
+  //             },
+  //             child: CustomPaint(
+  //               painter: RectanglePainter(rectangles, currentRect),
+  //             ),
+  //           ),
+  //         ),
+  //         for (var i in rectangles)
+  //           Positioned(
+  //             top: i.rect.top - 50,
+  //             right: i.rect.right,
+  //             height: 50,
+  //             width: 100,
+  //             child: Checkbox(
+  //               onChanged: (bool? val) {
+  //                 setState(() {
+  //                   i.isEditing = val!;
+  //                 });
+  //               },
+  //               value: i.isEditing,
+  //             ),
+  //           )
+  //       ],
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
