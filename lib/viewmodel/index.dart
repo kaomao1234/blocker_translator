@@ -1,1 +1,1 @@
-export 'package:blocker_translator/viewmodel/landing_viewmodel.dart';
+export 'package:blocker_translator/viewmodel/landing.dart';
