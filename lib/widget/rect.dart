@@ -4,8 +4,8 @@ import '../model/index.dart';
 
 
 class RectanglePainter extends CustomPainter {
-  final List<Rect> rectangles;
-  final Rect? currentRect; // Add the currentRect.
+  final List<RectangleModel> rectangles;
+  final RectangleModel? currentRect; // Add the currentRect.
 
   RectanglePainter(this.rectangles, this.currentRect);
 
@@ -17,11 +17,11 @@ class RectanglePainter extends CustomPainter {
       ..strokeWidth = 2.0;
 
     for (var rect in rectangles) {
-      canvas.drawRect(rect, paint);
+      canvas.drawRect(rect.rect, paint);
     }
 
     if (currentRect != null) {
-      canvas.drawRect(currentRect!, paint); // Draw the currentRect while dragging.
+      canvas.drawRect(currentRect!.rect, paint); // Draw the currentRect while dragging.
     }
   }
 
