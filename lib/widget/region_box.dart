@@ -1,32 +1,42 @@
+import 'package:blocker_translator/hooks/region_box.dart';
 import 'package:flutter/material.dart';
 
-class RegionBox extends StatelessWidget {
-  late void Function(DragUpdateDetails) boxPostionUpdate, boxSizeUpdate;
-  late double top, left, width, height;
-  RegionBox(this.height, this.left, this.top, this.width,
-      {super.key, required this.boxPostionUpdate, required this.boxSizeUpdate});
+class RegionBox extends StatefulWidget {
+  late RegionBoxState state;
+  void Function(DragUpdateDetails details) boxPositionUpdate, boxSizeUpdate;
+  RegionBox(
+      {super.key,
+      required this.state,
+      required this.boxPositionUpdate,
+      required this.boxSizeUpdate});
+
+  @override
+  State<RegionBox> createState() => _RegionBoxState();
+}
+
+class _RegionBoxState extends State<RegionBox> {
+  late RegionBoxState state = widget.state;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-        left: left,
-        top: top,
+        left: state.left,
+        top: state.top,
         child: Container(
-          width: width,
-          height: height,
+          width: state.width,
+          height: state.height,
           color: Colors.blue,
           child: Column(
             children: [
               Expanded(
-                  child: GestureDetector(
-                onPanUpdate: boxPostionUpdate,
-              )),
+                  child:
+                      GestureDetector(onPanUpdate: widget.boxPositionUpdate)),
               SizedBox(
                 height: 18,
                 child: Align(
                   alignment: Alignment.bottomRight,
                   child: GestureDetector(
-                    onPanUpdate: boxSizeUpdate,
+                    onPanUpdate: widget.boxSizeUpdate,
                     child: Container(
                       width: 18.0,
                       height: 18.0,
