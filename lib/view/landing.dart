@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:blocker_translator/hooks/region_box.dart';
 import 'package:blocker_translator/model/rectangle.dart';
 import 'package:blocker_translator/viewmodel/index.dart';
 import 'package:flutter/material.dart';
@@ -68,11 +69,8 @@ class _LandingViewState extends State<LandingView> with WindowListener {
       child: Stack(
         children: [
           RegionBox(
-            height,
-            left,
-            top,
-            width,
-            boxPostionUpdate: (details) {
+            state: RegionBoxState(),
+            boxPositionUpdate: (details) {
               setState(() {
                 left += details.delta.dx;
                 top += details.delta.dy;
@@ -90,6 +88,8 @@ class _LandingViewState extends State<LandingView> with WindowListener {
               setState(() {
                 width += details.delta.dx;
                 height += details.delta.dy;
+                width = width <= 0 ? 50 : width;
+                height = height <= 0 ? 50 : width;
               });
             },
           ),
