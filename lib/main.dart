@@ -1,3 +1,6 @@
+import 'dart:developer';
+
+import 'package:auto_size_widget/auto_size_widget.dart';
 import 'package:blocker_translator/service/index.dart';
 import 'package:blocker_translator/view/index.dart';
 import 'package:blocker_translator/viewmodel/index.dart';
@@ -8,13 +11,14 @@ void main() async {
   WindowManagerService windowManagerService = WindowManagerService();
   windowManagerService.initailize();
   runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider<LandingViewModel>(create: (_)=>LandingViewModel())
-    ],
-    builder: (context,child) {
-      return MaterialApp(
-        home: LandingView(),
-      );
-    }
-  ));
+      providers: [
+        ChangeNotifierProvider<LandingViewModel>(
+            create: (_) => LandingViewModel())
+      ],
+      builder: (context, child) {
+        return MaterialApp(
+          home: LandingView(),
+        );
+      }));
 }
+
