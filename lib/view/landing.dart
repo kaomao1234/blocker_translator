@@ -1,7 +1,4 @@
-import 'dart:developer';
-
 import 'package:blocker_translator/hooks/region_box.dart';
-import 'package:blocker_translator/model/rectangle.dart';
 import 'package:blocker_translator/viewmodel/index.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,19 +16,11 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   bool isPlay = false;
   GlobalKey key = GlobalKey();
   bool isSwicthMode = false;
-  List<RectangleModel> rectangles = [];
-  RectangleModel? currentRect;
-  Rect? tempRect;
+  bool isEdit = false;
+  List<RegionBoxState> regionBoxStates = [];
   final blockerSizeNotifier = ValueNotifier<Size>(Size.zero);
-
-  double top = 100.0;
-  double left = 100.0;
-  double width = 200.0;
-  double height = 100.0;
-
   LandingViewModel get viewModel =>
       Provider.of<LandingViewModel>(context, listen: false);
-
   @override
   void initState() {
     windowManager.addListener(this);
@@ -47,13 +36,12 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   void onPlayPress() {
     setState(() {
       isPlay = !isPlay;
-      viewModel.repeatingCallFrame(isPlay);
+      if (!isSwicthMode) {
+        viewModel.repeatingCallFrame(isPlay);
+      } else {
+        viewModel.regionCapturing(isPlay, regionBoxStates);
+      }
     });
-  }
-
-  Size getRedBoxSize(BuildContext context) {
-    final box = context.findRenderObject() as RenderBox;
-    return box.size;
   }
 
   @override
@@ -63,36 +51,43 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   }
 
   Widget drawableRectangle(Size size) {
+    void onRegionBoxPositionUpdate(
+        DragUpdateDetails details, RegionBoxState state) {
+      setState(() {
+        double top = details.delta.dy, left = details.delta.dx;
+        state.top += top;
+        state.left += left;
+        double bottom = state.top + state.height;
+        double right = state.left + state.width;
+        double maxTop = size.height - state.height;
+        double maxLeft = size.width - state.width;
+        state.top = state.top < 0 ? 0 : state.top;
+        state.left = state.left < 0 ? 0 : state.left;
+        state.top = bottom > size.height ? maxTop : state.top;
+        state.left = right > size.width ? maxLeft : state.left;
+      });
+    }
+
+    void onRegionBoxSizeUpdate(
+        DragUpdateDetails details, RegionBoxState state) {
+      setState(() {
+        state.width += details.delta.dx;
+        state.height += details.delta.dy;
+        state.width = state.width <= 0 ? 100 : state.width;
+        state.height = state.height <= 0 ? 100 : state.height;
+      });
+    }
+
     return SizedBox(
       width: size.width > 0 ? size.width : null,
       height: size.height > 0 ? size.height : null,
       child: Stack(
         children: [
-          RegionBox(
-            state: RegionBoxState(),
-            boxPositionUpdate: (details) {
-              setState(() {
-                left += details.delta.dx;
-                top += details.delta.dy;
-                if (top + height > size.height) {
-                  top = size.height - height;
-                }
-                if (left + width > size.width) {
-                  left = size.width - width;
-                }
-                left = left < 0 ? 0 : left;
-                top = top < 0 ? 0 : top;
-              });
-            },
-            boxSizeUpdate: (details) {
-              setState(() {
-                width += details.delta.dx;
-                height += details.delta.dy;
-                width = width <= 0 ? 50 : width;
-                height = height <= 0 ? 50 : width;
-              });
-            },
-          ),
+          for (var i in regionBoxStates)
+            RegionBox(
+                state: i,
+                boxPositionUpdate: onRegionBoxPositionUpdate,
+                boxSizeUpdate: onRegionBoxSizeUpdate)
         ],
       ),
     );
@@ -129,16 +124,12 @@ class _LandingViewState extends State<LandingView> with WindowListener {
                         color: Colors.red,
                         size: 25,
                       )),
-            Text(
-              viewModel.getblockerSize.toString(),
-              style: const TextStyle(fontSize: 16, color: Colors.black),
-            ),
             SizedBox(
               width: 10,
             ),
             TextButton(
               child: Text(
-                !isSwicthMode ? "blocker mode" : "rectangle mode",
+                isSwicthMode ? "rectangle mode" : "blocker mode",
                 style: TextStyle(
                     fontSize: 16,
                     color: !isSwicthMode ? Colors.black : Colors.blue),
@@ -153,14 +144,36 @@ class _LandingViewState extends State<LandingView> with WindowListener {
             TextButton(
                 onPressed: () {
                   setState(() {
-                    rectangles.clear();
-                    currentRect = null;
+                    regionBoxStates.clear();
                   });
                 },
                 child: Text(
                   "clear",
                   style: TextStyle(fontSize: 16, color: Colors.red),
-                ))
+                )),
+            TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    regionBoxStates.add(RegionBoxState());
+                  });
+                },
+                icon: Icon(Icons.add),
+                label: Text("Add rectangle")),
+            SizedBox(
+              width: 150,
+              child: CheckboxListTile(
+                value: isEdit,
+                onChanged: (bool? val) {
+                  setState(() {
+                    isEdit = val!;
+                    for (var i in regionBoxStates) {
+                      i.isEdit = isEdit;
+                    }
+                  });
+                },
+                title: Text("Edit mode"),
+              ),
+            )
           ]),
         ),
         backgroundColor: Colors.transparent,
