@@ -7,6 +7,8 @@ import 'package:blocker_translator/model/index.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../hooks/region_box.dart';
+
 class LandingViewModel with ChangeNotifier {
   Size? _blockerSize;
   BlockerModel? _blockerModel;
@@ -16,7 +18,6 @@ class LandingViewModel with ChangeNotifier {
   Timer? prevTimer;
   int frameCounter = 0;
   int lastTime = DateTime.now().millisecondsSinceEpoch;
-  int fps = 0;
   String prevText = "";
   void calcblockerSize() async {
     titleBarHeight = await windowManager.getTitleBarHeight();
@@ -38,8 +39,7 @@ class LandingViewModel with ChangeNotifier {
         top: windowBound.top + titleBarHeight + 59);
   }
 
-  void repeatingCallFrame(
-      bool allowToGet) async {
+  void repeatingCallFrame(bool allowToGet) async {
     prevTimer?.cancel();
     prevTimer =
         Timer.periodic(const Duration(milliseconds: 500), (timer) async {
@@ -48,6 +48,32 @@ class LandingViewModel with ChangeNotifier {
         String? textCaptured = await textFromImage();
         if (textCaptured != prevText) {
           prevText = textCaptured ?? "";
+          log(textCaptured.toString());
+        }
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void regionCapturing(bool allowToGet, List<RegionBoxState> _list) async {
+    prevTimer?.cancel();
+    prevTimer =
+        Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+      if (allowToGet) {
+        for (var i in _list) {
+          final model = BlockerModel(
+              height: i.height,
+              width: i.width,
+              left: i.left + _blockerModel!.left,
+              top: i.top + _blockerModel!.top);
+          log(model.toList().toString());
+          blockerCaptureRequest(model);
+          String? textCaptured = await textFromImage();
+          log(textCaptured.toString());
+          if (textCaptured != prevText) {
+            prevText = textCaptured ?? "";
+          }
           log(textCaptured.toString());
         }
       } else {
