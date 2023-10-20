@@ -17,6 +17,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  auto_size_widget:
+    dependency: "direct main"
+    description:
+      name: auto_size_widget
+      sha256: efd98fbf415110ff5fcca576ee6f3ea32a0e66767086a6c8868596c87ef73df8
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   bloc:
     dependency: transitive
     description:
