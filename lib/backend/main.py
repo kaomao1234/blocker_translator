@@ -2,7 +2,7 @@ from mss import mss
 import uvicorn
 from fastapi import FastAPI, responses
 import ctypes
-from PIL import Image,ImageFilter
+from PIL import Image, ImageFilter
 import numpy as np
 from pydantic import BaseModel
 import cv2
@@ -29,14 +29,15 @@ class Server():
     def __init__(self) -> None:
         self.app = FastAPI()
         self.count = 0
-        self.store_rectangle: Rectangle = None
-        self.store_image: np.ndarray = None
+        self.blocker_model: Rectangle = None
+        self.blocker_text: str = None
+        self.regiones_text: str = None
         user32 = ctypes.windll.user32
         self.screensize = user32.GetSystemMetrics(
             0), user32.GetSystemMetrics(1)
-        
-    def rgb2gray(self,rgb):
-        return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+
+    def rgb2gray(self, rgb):
+        return np.dot(rgb[..., :3], [0.2989, 0.5870, 0.1140])
 
     def get_frame(self):
         frame = np.random.randint(
@@ -45,38 +46,50 @@ class Server():
         yield (encodedImage.tobytes())
 
     def blocker_capture(self):
-        mons_res = self.store_rectangle.toDict()
+        mons_res = self.blocker_model.toDict()
         sct = mss()
         screenshot = sct.grab(mons_res)
         img = Image.frombytes(
             "RGB", (screenshot.width, screenshot.height), screenshot.rgb)
         array_image = np.array(img, dtype="uint8")
         array_image = np.flip(array_image, axis=2)
-        self.store_image = array_image
-        encodedImage = cv2.imencode(".png", array_image)[1]
-        yield (encodedImage.tobytes())
+        return array_image
 
-    def image_to_text(self):
-        img = Image.fromarray(self.store_image)
+    def encodedToPng(image_array: np.ndarray):
+        return cv2.imencode(".png", image_array)[1]
+
+    def image_to_text(self, image_array: np.ndarray):
+        img = Image.fromarray(image_array)
         img = img.filter(ImageFilter.DETAIL)
         ocr_reader = screen_ocr.Reader.create_quality_reader()
         text = ocr_reader.read_image(image=img).as_string()
-        # text = pytesseract.pytesseract.image_to_string(img,lang='eng')
-        return text.replace("â","--")
+        return text.replace("â", "--")
 
     def run(self):
-        @self.app.get('/text_from_image')
-        async def text_from_cur_image():
-            return self.image_to_text()
+        @self.app.post("/region_dectector")
+        async def set_region_detector(rectangle: Rectangle):
+            bottom = rectangle.top + rectangle.height
+            right = rectangle.left + rectangle.width
+            blocker_image = self.blocker_capture()
+            cropped_array = blocker_image[rectangle.top:bottom,
+                                             rectangle.left:right]
+            self.regiones_text = self.image_to_text(cropped_array)
+            return rectangle.toDict()
 
-        @self.app.post("/blocker_capture")
-        async def set_blocker_capture(rectangle: Rectangle):
-            self.store_rectangle = rectangle
-            return self.store_rectangle.toDict()
+        @self.app.get("/region_detector")
+        async def region_image_reading():
+            return self.regiones_text
 
-        @self.app.get("/blocker_capture")
-        async def blocker_capture_feed():
-            return responses.StreamingResponse(self.blocker_capture())
+        @self.app.post("/blocker_detector")
+        async def set_blocker_detector(rectangle: Rectangle):
+            self.blocker_model = rectangle
+            return self.blocker_model.toDict()
+
+        @self.app.get("/blocker_detector")
+        async def blocker_image_reading():
+            image = self.blocker_capture()
+            text = self.image_to_text(image_array=image)
+            return text
 
         @self.app.get("/frame")
         async def frame():
