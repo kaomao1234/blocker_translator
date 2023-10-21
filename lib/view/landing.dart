@@ -37,9 +37,9 @@ class _LandingViewState extends State<LandingView> with WindowListener {
     setState(() {
       isPlay = !isPlay;
       if (!isSwicthMode) {
-        viewModel.repeatingCallFrame(isPlay);
+        viewModel.frameDetection(isPlay);
       } else {
-        viewModel.regionCapturing(isPlay, regionBoxStates);
+        viewModel.regionDetection(isPlay, regionBoxStates);
       }
     });
   }
