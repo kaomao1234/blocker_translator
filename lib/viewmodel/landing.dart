@@ -18,7 +18,6 @@ class LandingViewModel with ChangeNotifier {
   Timer? prevTimer;
   int frameCounter = 0;
   int lastTime = DateTime.now().millisecondsSinceEpoch;
-  String prevText = "";
   void calcblockerSize() async {
     titleBarHeight = await windowManager.getTitleBarHeight();
     Size size = await windowManager.getSize();
@@ -39,16 +38,17 @@ class LandingViewModel with ChangeNotifier {
         top: windowBound.top + titleBarHeight + 59);
   }
 
-  void repeatingCallFrame(bool allowToGet) async {
+  void frameDetection(bool isPlay) async {
     prevTimer?.cancel();
+    String prevText = "";
     prevTimer =
         Timer.periodic(const Duration(milliseconds: 500), (timer) async {
-      if (allowToGet) {
-        blockerCaptureRequest(_blockerModel!);
-        String? textCaptured = await textFromImage();
-        if (textCaptured != prevText) {
-          prevText = textCaptured ?? "";
-          log(textCaptured.toString());
+      if (isPlay) {
+        blockerDetectorRequest(blockerModel!);
+        String? textDetected = await blockerDetector();
+        if (textDetected != prevText) {
+          prevText = textDetected ?? "";
+          log(textDetected.toString());
         }
       } else {
         timer.cancel();
@@ -56,46 +56,26 @@ class LandingViewModel with ChangeNotifier {
     });
   }
 
-  void regionCapturing(bool allowToGet, List<RegionBoxState> _list) async {
+  void regionDetection(bool isPlay, List<RegionBoxState> list) async {
     prevTimer?.cancel();
+    String prevText = "";
     prevTimer =
         Timer.periodic(const Duration(milliseconds: 500), (timer) async {
-      if (allowToGet) {
-        for (var i in _list) {
+      if (isPlay) {
+        blockerDetectorRequest(blockerModel!);
+        for (var i in list) {
           final model = BlockerModel(
-              height: i.height,
-              width: i.width,
-              left: i.left + _blockerModel!.left,
-              top: i.top + _blockerModel!.top);
-          log(model.toList().toString());
-          blockerCaptureRequest(model);
-          String? textCaptured = await textFromImage();
-          log(textCaptured.toString());
-          if (textCaptured != prevText) {
-            prevText = textCaptured ?? "";
+              height: i.height, width: i.width, left: i.left, top: i.top);
+          regionDetectorRequest(model);
+          String? textDetected = await regionDetector();
+          if (textDetected != prevText) {
+            prevText = textDetected ?? "";
+            log(textDetected.toString());
           }
-          log(textCaptured.toString());
         }
       } else {
         timer.cancel();
       }
     });
-  }
-
-  Future<String> callTextFromImage() async {
-    return await textFromImage() ?? "";
-  }
-
-  Future<Uint8List> callBlockerCaptureFeed() async {
-    blockerCaptureRequest(_blockerModel!);
-    return await blockerCaptureFeed() ?? Uint8List(0);
-  }
-
-  Future<Uint8List> callFrame() async {
-    return await frame() ?? Uint8List(0);
-  }
-
-  bool timeDifferenceBiggerThanSecond() {
-    return DateTime.now().millisecondsSinceEpoch - lastTime > 1000;
   }
 }
