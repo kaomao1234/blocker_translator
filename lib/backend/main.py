@@ -2,12 +2,12 @@ from mss import mss
 import uvicorn
 from fastapi import FastAPI, responses
 import ctypes
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageOps
 import numpy as np
 from pydantic import BaseModel
 import cv2
-import pytesseract
 import screen_ocr
+import easyocr
 
 
 class Rectangle(BaseModel):
@@ -61,9 +61,10 @@ class Server():
     def image_to_text(self, image_array: np.ndarray):
         img = Image.fromarray(image_array)
         img = img.filter(ImageFilter.DETAIL)
+        # this needs to run only once to load the model into memory
         ocr_reader = screen_ocr.Reader.create_quality_reader()
         text = ocr_reader.read_image(image=img).as_string()
-        return text.replace("â", "--")
+        return text
 
     def run(self):
         @self.app.post("/region_dectector")
@@ -72,7 +73,7 @@ class Server():
             right = rectangle.left + rectangle.width
             blocker_image = self.blocker_capture()
             cropped_array = blocker_image[rectangle.top:bottom,
-                                             rectangle.left:right]
+                                          rectangle.left:right]
             self.regiones_text = self.image_to_text(cropped_array)
             return rectangle.toDict()
 

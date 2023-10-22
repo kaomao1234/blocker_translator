@@ -1,6 +1,6 @@
-import 'dart:developer';
 
-import 'package:blocker_translator/hooks/region_box.dart';
+
+import 'package:blocker_translator/hooks/index.dart';
 import 'package:flutter/material.dart';
 
 class RegionBox extends StatefulWidget {

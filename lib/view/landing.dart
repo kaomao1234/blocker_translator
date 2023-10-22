@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:blocker_translator/hooks/region_box.dart';
 import 'package:blocker_translator/viewmodel/index.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +19,7 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   GlobalKey key = GlobalKey();
   bool isSwicthMode = false;
   bool isEdit = false;
-  List<RegionBoxState> regionBoxStates = [];
+  late String currentMode = viewModel.mode.keys.first;
   final blockerSizeNotifier = ValueNotifier<Size>(Size.zero);
   LandingViewModel get viewModel =>
       Provider.of<LandingViewModel>(context, listen: false);
@@ -36,11 +38,7 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   void onPlayPress() {
     setState(() {
       isPlay = !isPlay;
-      if (!isSwicthMode) {
-        viewModel.frameDetection(isPlay);
-      } else {
-        viewModel.regionDetection(isPlay, regionBoxStates);
-      }
+      viewModel.mode[currentMode]!(isPlay);
     });
   }
 
@@ -83,7 +81,7 @@ class _LandingViewState extends State<LandingView> with WindowListener {
       height: size.height > 0 ? size.height : null,
       child: Stack(
         children: [
-          for (var i in regionBoxStates)
+          for (var i in viewModel.regionBoxs)
             RegionBox(
                 state: i,
                 boxPositionUpdate: onRegionBoxPositionUpdate,
@@ -91,6 +89,43 @@ class _LandingViewState extends State<LandingView> with WindowListener {
         ],
       ),
     );
+  }
+
+  Widget regionTab() {
+    return Flexible(
+        child: Row(
+      children: [
+        TextButton(
+            onPressed: () {
+              viewModel.clearRegion();
+            },
+            child: Text(
+              "clear",
+              style: TextStyle(fontSize: 16, color: Colors.red),
+            )),
+        TextButton.icon(
+            onPressed: () {
+              viewModel.addRegion(RegionBoxState());
+            },
+            icon: Icon(Icons.add),
+            label: Text("Add rectangle")),
+        SizedBox(
+          width: 150,
+          child: CheckboxListTile(
+            value: isEdit,
+            onChanged: (bool? val) {
+              setState(() {
+                isEdit = val!;
+                for (var i in viewModel.regionBoxs) {
+                  i.isEdit = isEdit;
+                }
+              });
+            },
+            title: Text("Edit mode"),
+          ),
+        )
+      ],
+    ));
   }
 
   @override
@@ -106,6 +141,7 @@ class _LandingViewState extends State<LandingView> with WindowListener {
     blockerSizeNotifier.value = viewModel.getblockerSize!;
     return Scaffold(
         appBar: AppBar(
+          toolbarHeight: 40,
           centerTitle: true,
           backgroundColor: Colors.white,
           title: Row(children: [
@@ -127,53 +163,17 @@ class _LandingViewState extends State<LandingView> with WindowListener {
             SizedBox(
               width: 10,
             ),
-            TextButton(
-              child: Text(
-                isSwicthMode ? "rectangle mode" : "blocker mode",
-                style: TextStyle(
-                    fontSize: 16,
-                    color: !isSwicthMode ? Colors.black : Colors.blue),
-              ),
-              onPressed: () {
-                setState(() {
-                  isSwicthMode = !isSwicthMode;
-                  // viewModel.prevTimer!.cancel();
-                });
-              },
-            ),
-            TextButton(
-                onPressed: () {
+            DropdownMenu(
+                initialSelection: currentMode,
+                onSelected: (String? value) {
                   setState(() {
-                    regionBoxStates.clear();
+                    currentMode = value!;
                   });
                 },
-                child: Text(
-                  "clear",
-                  style: TextStyle(fontSize: 16, color: Colors.red),
-                )),
-            TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    regionBoxStates.add(RegionBoxState());
-                  });
-                },
-                icon: Icon(Icons.add),
-                label: Text("Add rectangle")),
-            SizedBox(
-              width: 150,
-              child: CheckboxListTile(
-                value: isEdit,
-                onChanged: (bool? val) {
-                  setState(() {
-                    isEdit = val!;
-                    for (var i in regionBoxStates) {
-                      i.isEdit = isEdit;
-                    }
-                  });
-                },
-                title: Text("Edit mode"),
-              ),
-            )
+                dropdownMenuEntries: viewModel.mode.keys
+                    .map((e) => DropdownMenuEntry<String>(value: e, label: e))
+                    .toList()),
+            currentMode == "region mode" ? regionTab() : SizedBox()
           ]),
         ),
         backgroundColor: Colors.transparent,
