@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:blocker_translator/hooks/region_box.dart';
 import 'package:blocker_translator/viewmodel/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import '../widget/index.dart';
@@ -20,25 +21,57 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   bool isSwicthMode = false;
   bool isEdit = false;
   late String currentMode = viewModel.mode.keys.first;
-  final blockerSizeNotifier = ValueNotifier<Size>(Size.zero);
+  late List<RegionBoxState> regionBoxStates = [];
+  bool isIgnoreMouse = false;
+  // final blockerSizeNotifier = ValueNotifier<Size>(Size.zero);
   LandingViewModel get viewModel =>
       Provider.of<LandingViewModel>(context, listen: false);
+
   @override
   void initState() {
+    regionBoxStates.addAll(viewModel.regionBoxs);
+    ServicesBinding.instance.keyboard.addHandler(onKeyPress);
     windowManager.addListener(this);
     super.initState();
   }
 
   @override
   void dispose() {
+    ServicesBinding.instance.keyboard.removeHandler(onKeyPress);
     windowManager.removeListener(this);
     super.dispose();
+  }
+
+  bool onKeyPress(KeyEvent event) {
+    final key = event.logicalKey.keyLabel;
+
+    // if (event is KeyDownEvent) {
+    //   if (key == "Pause") {
+    //     isIgnoreMouse = !isIgnoreMouse;
+    //     () async {
+    //       await windowManager.setIgnoreMouseEvents(isIgnoreMouse);
+    //     }();
+    //     log("Key down: $key");
+    //   }
+    // }
+    // } else if (event is KeyUpEvent) {
+    //   log("Key up: $key");
+    // } else if (event is KeyRepeatEvent) {
+    //   log("Key repeat: $key");
+    // }
+
+    return false;
   }
 
   void onPlayPress() {
     setState(() {
       isPlay = !isPlay;
       viewModel.mode[currentMode]!(isPlay);
+      if (isPlay) {
+        regionBoxStates.clear();
+      } else {
+        regionBoxStates.addAll(viewModel.regionBoxs);
+      }
     });
   }
 
@@ -49,43 +82,13 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   }
 
   Widget drawableRectangle(Size size) {
-    void onRegionBoxPositionUpdate(
-        DragUpdateDetails details, RegionBoxState state) {
-      setState(() {
-        double top = details.delta.dy, left = details.delta.dx;
-        state.top += top;
-        state.left += left;
-        double bottom = state.top + state.height;
-        double right = state.left + state.width;
-        double maxTop = size.height - state.height;
-        double maxLeft = size.width - state.width;
-        state.top = state.top < 0 ? 0 : state.top;
-        state.left = state.left < 0 ? 0 : state.left;
-        state.top = bottom > size.height ? maxTop : state.top;
-        state.left = right > size.width ? maxLeft : state.left;
-      });
-    }
-
-    void onRegionBoxSizeUpdate(
-        DragUpdateDetails details, RegionBoxState state) {
-      setState(() {
-        state.width += details.delta.dx;
-        state.height += details.delta.dy;
-        state.width = state.width <= 0 ? 100 : state.width;
-        state.height = state.height <= 0 ? 100 : state.height;
-      });
-    }
-
     return SizedBox(
       width: size.width > 0 ? size.width : null,
       height: size.height > 0 ? size.height : null,
       child: Stack(
         children: [
-          for (var i in viewModel.regionBoxs)
-            RegionBox(
-                state: i,
-                boxPositionUpdate: onRegionBoxPositionUpdate,
-                boxSizeUpdate: onRegionBoxSizeUpdate)
+          for (var i in regionBoxStates)
+            RegionBox(state: i, hook: setState, areaSize: size)
         ],
       ),
     );
@@ -105,25 +108,14 @@ class _LandingViewState extends State<LandingView> with WindowListener {
             )),
         TextButton.icon(
             onPressed: () {
-              viewModel.addRegion(RegionBoxState());
+              setState(() {
+                viewModel.addRegion(RegionBoxState());
+                regionBoxStates.clear();
+                regionBoxStates.addAll(viewModel.regionBoxs);
+              });
             },
             icon: Icon(Icons.add),
             label: Text("Add rectangle")),
-        SizedBox(
-          width: 150,
-          child: CheckboxListTile(
-            value: isEdit,
-            onChanged: (bool? val) {
-              setState(() {
-                isEdit = val!;
-                for (var i in viewModel.regionBoxs) {
-                  i.isEdit = isEdit;
-                }
-              });
-            },
-            title: Text("Edit mode"),
-          ),
-        )
       ],
     ));
   }
@@ -138,7 +130,6 @@ class _LandingViewState extends State<LandingView> with WindowListener {
   }
 
   Widget core(BuildContext context, LandingViewModel viewModel) {
-    blockerSizeNotifier.value = viewModel.getblockerSize!;
     return Scaffold(
         appBar: AppBar(
           toolbarHeight: 40,
@@ -163,27 +154,26 @@ class _LandingViewState extends State<LandingView> with WindowListener {
             SizedBox(
               width: 10,
             ),
-            DropdownMenu(
-                initialSelection: currentMode,
-                onSelected: (String? value) {
+            DropdownButton(
+                value: currentMode,
+                onChanged: (String? value) {
                   setState(() {
                     currentMode = value!;
+                    isSwicthMode = !isSwicthMode;
                   });
                 },
-                dropdownMenuEntries: viewModel.mode.keys
-                    .map((e) => DropdownMenuEntry<String>(value: e, label: e))
+                items: viewModel.mode.keys
+                    .map((e) => DropdownMenuItem<String>(
+                          value: e,
+                          child: Text(e),
+                        ))
                     .toList()),
             currentMode == "region mode" ? regionTab() : SizedBox()
           ]),
         ),
         backgroundColor: Colors.transparent,
         body: isSwicthMode
-            ? ValueListenableBuilder(
-                valueListenable: blockerSizeNotifier,
-                builder: (context, value, child) {
-                  return drawableRectangle(value);
-                },
-              )
+            ? drawableRectangle(viewModel.getblockerSize!)
             : Container());
   }
 }

@@ -1,17 +1,18 @@
-
+import 'dart:developer';
 
 import 'package:blocker_translator/hooks/index.dart';
 import 'package:flutter/material.dart';
 
 class RegionBox extends StatefulWidget {
   late RegionBoxState state;
-  void Function(DragUpdateDetails details, RegionBoxState state)
-      boxPositionUpdate, boxSizeUpdate;
-  RegionBox(
-      {super.key,
-      required this.state,
-      required this.boxPositionUpdate,
-      required this.boxSizeUpdate});
+  void Function(VoidCallback fn) hook;
+  Size areaSize;
+  RegionBox({
+    super.key,
+    required this.state,
+    required this.hook,
+    required this.areaSize,
+  });
 
   @override
   State<RegionBox> createState() => _RegionBoxState();
@@ -20,30 +21,45 @@ class RegionBox extends StatefulWidget {
 class _RegionBoxState extends State<RegionBox> {
   late RegionBoxState state = widget.state;
   bool isEnter = false;
-
   GestureDetector _gestureDetector() {
     return GestureDetector(
-        onPanUpdate: (details) => widget.boxPositionUpdate(details, state));
-  }
-
-  Column _column() {
-    return Column(
-      children: [
-        Text(
-          state.name,
-          style: TextStyle(fontSize: 16),
-        ),
-        TextField(
-          decoration: InputDecoration(hintText: "Input box name"),
-          controller: state.controller,
-          onChanged: (value) {
-            setState(() {
-              state.name = value;
-            });
-          },
-        ),
-      ],
-    );
+        onTap: () => showDialog<String>(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+                  title: Text(state.name),
+                  content: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        state.name = value!;
+                      });
+                    },
+                  ),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'Cancel'),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'OK'),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                )),
+        onPanUpdate: (details) {
+          widget.hook(() {
+            double top = details.delta.dy, left = details.delta.dx;
+            state.top += top;
+            state.left += left;
+            double bottom = state.top + state.height;
+            double right = state.left + state.width;
+            double maxTop = widget.areaSize.height - state.height;
+            double maxLeft = widget.areaSize.width - state.width;
+            state.top = state.top < 0 ? 0 : state.top;
+            state.left = state.left < 0 ? 0 : state.left;
+            state.top = bottom > widget.areaSize.height ? maxTop : state.top;
+            state.left = right > widget.areaSize.width ? maxLeft : state.left;
+          });
+        });
   }
 
   @override
@@ -51,7 +67,7 @@ class _RegionBoxState extends State<RegionBox> {
     return Positioned(
         left: state.left,
         top: state.top,
-        child: Container(
+        child: SizedBox(
           width: state.width,
           height: state.height + 20,
           child: MouseRegion(
@@ -72,46 +88,58 @@ class _RegionBoxState extends State<RegionBox> {
                   height: state.height,
                   width: state.width,
                   decoration: BoxDecoration(
-                      color: state.isEdit ? Colors.white : Colors.transparent,
+                      color: Colors.transparent,
                       border: Border.all(
                           color: isEnter ? Colors.green : Colors.blue,
                           width: 2)),
-                  child: state.isEdit ? _column() : _gestureDetector(),
+                  child: _gestureDetector(),
                 ),
-                if (state.isEdit)
-                  SizedBox(
-                    height: 20,
-                    child: Align(
-                      alignment: Alignment.bottomRight,
-                      child: Container(
-                        color: Colors.amberAccent,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 18.0,
-                              height: 18.0,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: GestureDetector(
-                                onPanUpdate: (details) =>
-                                    widget.boxSizeUpdate(details, state),
-                                child: Center(
-                                  child: Icon(
-                                    Icons.crop,
-                                    size: 18,
-                                    color: Colors.white,
-                                  ),
+                SizedBox(
+                  height: 20,
+                  child: Align(
+                    alignment: Alignment.bottomRight,
+                    child: Container(
+                      color: Colors.white,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            state.name,
+                          ),
+                          Container(
+                            width: 18.0,
+                            height: 18.0,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: GestureDetector(
+                              onPanUpdate: (details) {
+                                widget.hook(
+                                  () {
+                                    state.width += details.delta.dx;
+                                    state.height += details.delta.dy;
+                                    state.width =
+                                        state.width <= 0 ? 100 : state.width;
+                                    state.height =
+                                        state.height <= 0 ? 100 : state.height;
+                                  },
+                                );
+                              },
+                              child: Center(
+                                child: Icon(
+                                  Icons.crop,
+                                  size: 18,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  )
+                  ),
+                )
               ],
             ),
           ),

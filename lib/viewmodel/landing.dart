@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:blocker_translator/api/index.dart';
 import 'package:blocker_translator/model/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easylogger/flutter_logger.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../hooks/region_box.dart';
@@ -13,11 +14,13 @@ class LandingViewModel with ChangeNotifier {
   Size? _blockerSize;
   BlockerModel? _blockerModel;
   Size? get getblockerSize => _blockerSize;
+  List<ConversationBlock> recordedConversation = [];
   Uint8List? imageBytes;
   int titleBarHeight = 0;
   Timer? prevTimer;
   int frameCounter = 0;
   List<RegionBoxState> regionBoxs = [];
+  List<String> frameTextDetected = [];
   late Map<String, Function> mode = {
     "blocker mode": frameDetection,
     "region mode": regionDetection,
@@ -44,7 +47,6 @@ class LandingViewModel with ChangeNotifier {
   }
 
   void frameDetection(bool isPlay) async {
-    log(isPlay.toString());
     prevTimer?.cancel();
     String prevText = "";
     prevTimer =
@@ -54,8 +56,29 @@ class LandingViewModel with ChangeNotifier {
         String? textDetected = await blockerDetector();
         if (textDetected != prevText) {
           prevText = textDetected ?? "";
-          log(textDetected.toString());
+          int lenght = frameTextDetected.length;
+          if (lenght == 0) {
+            frameTextDetected.add("\"$textDetected\"");
+          } else if (frameTextDetected[lenght - 1].length <
+              textDetected!.length) {
+            frameTextDetected[lenght - 1] = "\"$textDetected\"";
+          } else {
+            frameTextDetected.add("\"$textDetected\"");
+          }
+          print(frameTextDetected.toString());
         }
+        // List<String> filterFrameDetected = [];
+        // if (frameTextDetected.length > 2) {
+        //   for (int i = 1; i < frameTextDetected.length; i++) {
+        //     String next = frameTextDetected[i];
+        //     String current = frameTextDetected[i--];
+        //     if (current.length > next.length) {
+        //       // Logger.d("$current\n$next");
+        //       filterFrameDetected.add(current);
+        //     }
+        //   }
+        // }
+        // Logger.json(filterFrameDetected.toString());
       } else {
         timer.cancel();
       }
@@ -78,17 +101,27 @@ class LandingViewModel with ChangeNotifier {
     prevTimer =
         Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       if (isPlay) {
-        blockerDetectorRequest(blockerModel!);
-        for (var i in regionBoxs) {
-          final model = BlockerModel(
-              height: i.height, width: i.width, left: i.left, top: i.top);
-          regionDetectorRequest(model);
-          String? textDetected = await regionDetector();
-          if (textDetected != prevText) {
-            prevText = textDetected ?? "";
-            log(textDetected.toString());
-          }
-        }
+        // blockerDetectorRequest(blockerModel!);
+        // Map<String, dynamic> conversation = {"teller": "", "scripts": []};
+        // regionBoxs.forEach((i) async {
+        //   final model = BlockerModel(
+        //       height: i.height, width: i.width, left: i.left, top: i.top);
+        //   regionDetectorRequest(model);
+        //   String? textDetected = await regionDetector();
+        //   // log(conversation.toString());
+        //   if ("name" == i.name) {
+        //     log("${i.name} = $textDetected");
+        //     if (conversation['teller'] != textDetected) {
+        //       conversation['teller'] = textDetected;
+        //       conversation['scripts'] = [];
+        //     }
+        //   }
+        //   if ("scripts" == i.name) {
+        //     if (conversation['scripts'].contains(textDetected) == false) {
+        //       conversation['scripts'].add(textDetected);
+        //     }
+        //   }
+        // });
       } else {
         timer.cancel();
       }

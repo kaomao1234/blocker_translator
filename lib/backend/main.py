@@ -7,6 +7,7 @@ import numpy as np
 from pydantic import BaseModel
 import cv2
 import screen_ocr
+import pytesseract
 import easyocr
 
 
@@ -62,8 +63,9 @@ class Server():
         img = Image.fromarray(image_array)
         img = img.filter(ImageFilter.DETAIL)
         # this needs to run only once to load the model into memory
-        ocr_reader = screen_ocr.Reader.create_quality_reader()
-        text = ocr_reader.read_image(image=img).as_string()
+        ocr_reader = screen_ocr.Reader.create_reader(backend="easyocr",language_tag="en")
+        text = ocr_reader.read_screen().as_string()
+        # text = pytesseract.image_to_string(img)
         return text
 
     def run(self):
